@@ -2,6 +2,11 @@
 
 EcoPlay is an interactive, gamified environmental platform built with React 18+, Vite 5+, Tailwind CSS 3+, and Framer Motion. It features creative mini-games, an advanced Eco Village system, dynamic dashboards, educational content, events, and community engagement, all integrated with a SQL backend for gamification, leaderboards, and persistent user progress.
 
+
+link to project live (vercel) :  https://ecoplaydeploy.vercel.app/
+
+
+
 ## 🌟 Features
 
 ### Core Functionality
