@@ -243,9 +243,9 @@ CREATE POLICY "public_read_level_thresholds" ON level_thresholds FOR SELECT USIN
 
 -- Users can only read/write their own rows
 CREATE POLICY "own_streaks"     ON user_streaks FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "own_xp_ledger"   ON xp_ledger    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "own_xp_ledger"   ON xp_ledger    FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "own_stats"       ON user_stats   FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "own_badges"      ON user_badges  FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "own_badges"      ON user_badges  FOR SELECT USING (auth.uid() = user_id);
 
 -- Leaderboard: everyone can read stats (for rankings), but only owners write
 CREATE POLICY "leaderboard_read" ON user_stats  FOR SELECT USING (true);

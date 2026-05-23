@@ -82,73 +82,39 @@ export async function awardXP(
   activityType: ActivityType,
   metadata?: Record<string, unknown>
 ): Promise<XPAwardResult> {
-  // 1. Fetch config for this activity
-  const { data: config, error: cfgErr } = await supabase
-    .from('xp_config')
-    .select('base_xp, difficulty_weight')
-    .eq('activity_type', activityType)
-    .single();
-
-  if (cfgErr || !config) {
-    throw new Error(`Unknown activity type: ${activityType}`);
-  }
-
-  // 2. Fetch current streak multiplier (default 1.0 if no row yet)
-  const { data: streakRow } = await supabase
-    .from('user_streaks')
-    .select('streak_multiplier, current_streak')
-    .eq('user_id', userId)
-    .single();
-
-  const streakMultiplier: number = streakRow?.streak_multiplier ?? 1.0;
-
-  // 3. Compute final XP  (mirrors SQL formula)
-  const finalXP = Math.round(
-    config.base_xp * config.difficulty_weight * streakMultiplier
-  );
-
-  // 4. Fetch current level BEFORE insert for level-up detection
+  // Fetch current level BEFORE insert for level-up detection
   const { data: statsBefore } = await supabase
     .from('user_stats')
-    .select('current_level, total_xp')
+    .select('current_level')
     .eq('user_id', userId)
     .single();
 
   const levelBefore = statsBefore?.current_level ?? 1;
 
-  // 5. Insert into xp_ledger → triggers update user_stats + user_streaks
-  const { error: ledgerErr } = await supabase.from('xp_ledger').insert({
-    user_id:           userId,
-    activity_type:     activityType,
-    base_xp:           config.base_xp,
-    difficulty_weight: config.difficulty_weight,
-    streak_multiplier: streakMultiplier,
-    final_xp:          finalXP,
-    metadata:          metadata ?? null,
+  // Call the secure RPC to compute and award XP on the backend
+  const { data, error } = await supabase.rpc('award_xp_secure', {
+    p_activity_type: activityType,
+    p_metadata: metadata ?? null
   });
 
-  if (ledgerErr) throw ledgerErr;
+  if (error) {
+    console.error('[EcoPlay] Secure XP award failed:', error);
+    throw error;
+  }
 
-  // 6. Fetch updated stats (triggers have run by now)
-  const { data: statsAfter, error: statsErr } = await supabase
-    .from('user_stats')
-    .select('total_xp, current_level, xp_to_next_level')
-    .eq('user_id', userId)
-    .single();
+  const result = data as any;
 
-  if (statsErr || !statsAfter) throw statsErr;
-
-  // 7. Check for newly earned badges
-  const newBadges = await checkAndAwardBadges(userId, activityType, streakRow?.current_streak ?? 0);
+  // Check for newly earned badges
+  const newBadges = await checkAndAwardBadges(userId, activityType, result.current_streak ?? 0);
 
   return {
-    finalXP,
-    baseXP:           config.base_xp,
-    difficultyWeight: config.difficulty_weight,
-    streakMultiplier,
-    newTotalXP:  statsAfter.total_xp,
-    newLevel:    statsAfter.current_level,
-    leveledUp:   statsAfter.current_level > levelBefore,
+    finalXP: result.final_xp,
+    baseXP: result.base_xp,
+    difficultyWeight: result.difficulty_weight,
+    streakMultiplier: result.streak_multiplier,
+    newTotalXP: result.new_total_xp,
+    newLevel: result.new_level,
+    leveledUp: result.new_level > levelBefore,
     newBadges,
   };
 }
@@ -215,10 +181,10 @@ async function checkAndAwardBadges(
 
   if (candidates.length === 0) return [];
 
-  // Batch-insert newly earned badges
-  const { error } = await supabase.from('user_badges').insert(
-    candidates.map((key) => ({ user_id: userId, badge_key: key }))
-  );
+  // Batch-insert newly earned badges securely via RPC
+  const { error } = await supabase.rpc('award_badges_secure', {
+    p_badge_keys: candidates
+  });
 
   if (error) console.error('[EcoPlay] Badge insert error:', error);
 
