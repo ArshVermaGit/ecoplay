@@ -110,3 +110,32 @@ ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS category TEXT;
 ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS tags TEXT[];
 ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS replies INTEGER DEFAULT 0;
 ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS is_solved BOOLEAN DEFAULT false;
+-- ============================================================
+-- Recommendation Engine Extensions
+-- ============================================================
+
+-- Alter challenges table to store recommendation metadata
+ALTER TABLE challenges ADD COLUMN IF NOT EXISTS is_recommended BOOLEAN DEFAULT FALSE;
+ALTER TABLE challenges ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE challenges ADD COLUMN IF NOT EXISTS difficulty TEXT;
+ALTER TABLE challenges ADD COLUMN IF NOT EXISTS recommendation_reason TEXT;
+
+-- Create user eco preferences table
+CREATE TABLE IF NOT EXISTS user_eco_preferences (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  water_preference NUMERIC(4,2) DEFAULT 1.0,
+  energy_preference NUMERIC(4,2) DEFAULT 1.0,
+  waste_preference NUMERIC(4,2) DEFAULT 1.0,
+  biodiversity_preference NUMERIC(4,2) DEFAULT 1.0,
+  community_preference NUMERIC(4,2) DEFAULT 1.0,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS on preferences table
+ALTER TABLE user_eco_preferences ENABLE ROW LEVEL SECURITY;
+
+-- Drop policy if exists
+DROP POLICY IF EXISTS "Users can manage own preferences" ON user_eco_preferences;
+
+-- Policy for preferences
+CREATE POLICY "Users can manage own preferences" ON user_eco_preferences FOR ALL USING (auth.uid() = user_id);
