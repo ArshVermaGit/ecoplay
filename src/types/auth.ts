@@ -18,6 +18,12 @@ export interface AuthContextType {
     isGuest: boolean;
     showMergePrompt: boolean;
     login: (email: string, password: string) => Promise<AuthResponse>;
+    forgotPassword: (
+            email: string
+            ) => Promise<{
+            success: boolean;
+            error?: string;
+    }>;
     register: (
         name: string,
         email: string,
