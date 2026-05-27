@@ -54,7 +54,7 @@ const AppRoutes = () => {
           pendingCount={pendingCount}
         />
         <BrowserRouter>
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white text-xl">Loading...</div>}>
+          <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white text-xl">Loading...</div>}>
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
