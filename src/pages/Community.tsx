@@ -20,6 +20,15 @@ import { useAuth } from '../context/AuthContext';
 import { dbFunctions, CommunityPost } from '../lib/supabase';
 
 const Community = () => {
+  const [loading, setLoading] = useState(true);
+
+React.useEffect(() => {
+  const timer = setTimeout(() => {
+    setLoading(false);
+  }, 1500);
+
+  return () => clearTimeout(timer);
+}, []);
   const { isGuest } = useAuth();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -217,6 +226,69 @@ const Community = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   };
+  if (loading) {
+  return (
+    <div className="space-y-6 animate-pulse">
+
+      {/* Header Skeleton */}
+      <div className="text-center space-y-4">
+        <div className="h-10 w-64 bg-white/10 rounded-full mx-auto"></div>
+        <div className="h-4 w-96 bg-white/10 rounded-full mx-auto"></div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="flex gap-4">
+        <div className="h-14 flex-1 rounded-2xl bg-white/10"></div>
+        <div className="h-14 w-40 rounded-2xl bg-white/10"></div>
+      </div>
+
+      {/* Category Chips */}
+      <div className="flex gap-3">
+        {[1,2,3,4].map((item) => (
+          <div
+            key={item}
+            className="h-10 w-28 rounded-full bg-white/10"
+          />
+        ))}
+      </div>
+
+      {/* Posts Skeleton */}
+      {[1,2,3].map((post) => (
+        <div
+          key={post}
+          className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl"
+        >
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+          <div className="relative z-10 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-white/10"></div>
+
+              <div className="flex-1">
+                <div className="h-4 w-32 rounded-full bg-white/10 mb-2"></div>
+                <div className="h-3 w-24 rounded-full bg-white/5"></div>
+              </div>
+            </div>
+
+            <div className="h-6 w-3/4 rounded-full bg-white/10"></div>
+
+            <div className="space-y-2">
+              <div className="h-3 rounded-full bg-white/10"></div>
+              <div className="h-3 rounded-full bg-white/10 w-5/6"></div>
+              <div className="h-3 rounded-full bg-white/10 w-4/6"></div>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="h-8 w-20 rounded-full bg-white/10"></div>
+              <div className="h-8 w-20 rounded-full bg-white/10"></div>
+              <div className="h-8 w-20 rounded-full bg-white/10"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
   if (isGuest) {
     return (
