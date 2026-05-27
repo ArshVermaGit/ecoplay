@@ -7,8 +7,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import { validateEnv } from './config/validateEnv';
 import Layout from './components/Layout';
 import useSyncStatus from './hooks/useSyncStatus';
-import MergePrompt from './components/status/MergePrompt';
 import OfflineBanner from './components/status/OfflineBanner';
+import { ErrorBoundary } from './ErrorBoundary';
 
 import Auth from './pages/Auth';
 
@@ -42,19 +42,21 @@ const Protected: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return <Layout>{children}</Layout>;
 };
-const AppRoutes = () => {
-    const { supabaseError } = useAuth();
-    const { pendingCount, isSyncing } = useSyncStatus();
-    const bannerMessage = `${supabaseError ?? ''}${isSyncing ? ' Syncing...' : ''}`;
 
-    return (
-      <>
-        <OfflineBanner
-          visible={!!supabaseError}
-          message={bannerMessage}
-          pendingCount={pendingCount}
-        />
-        <BrowserRouter>
+const AppRoutes = () => {
+  const { supabaseError } = useAuth();
+  const { pendingCount, isSyncing } = useSyncStatus();
+  const bannerMessage = `${supabaseError ?? ''}${isSyncing ? ' Syncing...' : ''}`;
+
+  return (
+    <>
+      <OfflineBanner
+        visible={!!supabaseError || isSyncing || (pendingCount ? pendingCount > 0 : false)}
+        message={bannerMessage}
+        pendingCount={pendingCount}
+      />
+      <BrowserRouter>
+        <ErrorBoundary>
           <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white text-xl">Loading...</div>}>
             <Routes>
               {/* Public routes */}
@@ -66,6 +68,7 @@ const AppRoutes = () => {
               <Route path="/ocean-cleanup-game" element={<Protected><OceanCleanupGame /></Protected>} />
               <Route path="/eco-village" element={<Protected><EcoVillage /></Protected>} />
               <Route path="/learn" element={<Protected><Learn /></Protected>} />
+              <Route path="/journey" element={<Protected><Journey /></Protected>} />
               <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
               <Route path="/community" element={<Protected><Community /></Protected>} />
               <Route path="/events" element={<Protected><Events /></Protected>} />
@@ -74,10 +77,11 @@ const AppRoutes = () => {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </Suspense>
-        </BrowserRouter>
-      </>
-    );
-  };
+        </ErrorBoundary>
+      </BrowserRouter>
+    </>
+  );
+};
 
 export default function App() {
   const envStatus = validateEnv();
@@ -86,38 +90,11 @@ export default function App() {
     return <ConfigErrorScreen missing={envStatus.missing} />;
   }
 
-  
-
   return (
     <ThemeProvider>
       <AuthProvider>
         <GameProvider>
-          <BrowserRouter>
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center text-white text-xl">
-                Loading...
-              </div>
-            }>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Auth />} />
-
-                {/* Protected routes */}
-                <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
-                <Route path="/ocean-cleanup-game" element={<Protected><OceanCleanupGame /></Protected>} />
-                <Route path="/eco-village" element={<Protected><EcoVillage /></Protected>} />
-                <Route path="/learn" element={<Protected><Learn /></Protected>} />
-                <Route path="/journey" element={<Protected><Journey /></Protected>} />
-                <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
-                <Route path="/community" element={<Protected><Community /></Protected>} />
-                <Route path="/events" element={<Protected><Events /></Protected>} />
-
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
+          <AppRoutes />
         </GameProvider>
       </AuthProvider>
     </ThemeProvider>
